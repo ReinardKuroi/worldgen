@@ -54,6 +54,14 @@ def visualize_voxels(data):
     pyplot.show()
 
 
+def visualize_points(data):
+    fig = pyplot.figure()
+    ax = fig.gca(projection='3d')
+    ax.scatter(*data.nonzero())
+    ax.axis('off')
+    pyplot.show()
+
+
 def filter_cutoff(x_width, y_height, world, ground_zero):
     ocean = [0, .1]
     beach = [.1, .15]
@@ -86,10 +94,10 @@ def main():
     island_size: float
     island_complexity: float
 
-    x_width: int = 32
-    y_height: int = 32
-    z_depth: int = 32
-    scale: float = .9
+    x_width: int = 256
+    y_height: int = 256
+    z_depth: int = 256
+    scale: float = .01
 
     """
         Generate some sort of noise map for the island shape
@@ -107,12 +115,12 @@ def main():
     island = island_factory.new((x_width, y_height, z_depth), scale)
     # island.apply_noise()
     # island.apply_threshold(.45)
-    island.apply_combined_noise(.45)
+    island.apply_combined_noise(.8)
 
     # heightmap = generate_heightmap(x_width, y_height, empty_world)
     # heightmap = filter_cutoff(x_width, y_height, heightmap, ocean_level)
     # print(island.mesh.data)
-    visualize_voxels(island.mesh.data)
+    visualize_points(island.mesh.data)
     #
     # visualize(filtered_heightmap)
     # island = render_map(filtered_heightmap)

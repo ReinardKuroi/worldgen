@@ -1,6 +1,7 @@
 import random
 from typing import Tuple
-from noise import pnoise3
+
+from noise.perlin import SimplexNoise
 import logging
 
 from worldgen.island_mesh.mesh_data import MeshData
@@ -50,23 +51,9 @@ class IslandMesh:
 
     def apply_noise_on_point(self, x, y, z):
         scale: float = self.scale
-        octaves: int = 3
-        persistence: float = .5
-        lacunarity: float = 2.
 
         random.seed()
-        global_random_offset_x = random.randint(0, 1024 * 1024)
-        global_random_offset_y = random.randint(0, 1024 * 1024)
-        global_random_offset_z = random.randint(0, 1024 * 1024)
-
-        result = pnoise3((x + global_random_offset_x) * scale,
-                         (y + global_random_offset_y) * scale,
-                         (z + global_random_offset_z) * scale,
-                         octaves=octaves,
-                         persistence=persistence,
-                         lacunarity=lacunarity,
-                         repeatx=self.x_width,
-                         repeaty=self.y_height,
-                         repeatz=self.z_depth,
-                         base=0)
+        noise = SimplexNoise(period=2)
+        noise.randomize()
+        result = noise.noise3(x * scale, y * scale, z * scale)
         return result
