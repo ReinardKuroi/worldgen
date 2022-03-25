@@ -35,13 +35,24 @@ class IslandMesh:
                         value = 0
                     self.mesh.set_point(x, y, z, value)
 
-    # def normalize_mesh(self):
+    def apply_combined_noise(self, threshold):
+        logging.info('Applying fast noise...')
+        for x in range(self.x_width):
+            for y in range(self.y_height):
+                for z in range(self.z_depth):
+                    perlin = self.apply_noise_on_point(x, y, z)
+                    if perlin > threshold:
+                        self.mesh.set_point(x, y, z, 1)
+
+    def normalize_mesh(self):
+        logging.info('Normalizing vertex probability...')
+        self.mesh.normalize()
 
     def apply_noise_on_point(self, x, y, z):
         scale: float = self.scale
-        octaves: int = 5
-        persistence: float = .7
-        lacunarity: float = 1.5
+        octaves: int = 3
+        persistence: float = .5
+        lacunarity: float = 2.
 
         random.seed()
         global_random_offset_x = random.randint(0, 1024 * 1024)
