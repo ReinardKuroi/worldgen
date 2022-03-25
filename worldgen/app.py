@@ -1,3 +1,5 @@
+import logging
+
 from matplotlib import pyplot, cm
 import random
 import noise
@@ -44,6 +46,14 @@ def visualize3d(data):
     pyplot.show()
 
 
+def visualize_voxels(data):
+    fig = pyplot.figure()
+    ax = fig.gca(projection='3d')
+    ax.voxels(data, edgecolors='k', facecolors='blue')
+    ax.axis('off')
+    pyplot.show()
+
+
 def filter_cutoff(x_width, y_height, world, ground_zero):
     ocean = [0, .1]
     beach = [.1, .15]
@@ -76,8 +86,10 @@ def main():
     island_size: float
     island_complexity: float
 
-    x_width: int = 1024
-    y_height: int = 1024
+    x_width: int = 32
+    y_height: int = 32
+    z_depth: int = 32
+    scale: float = .01
 
     """
         Generate some sort of noise map for the island shape
@@ -87,14 +99,19 @@ def main():
         To make it 3d it is possible to add another noise iteration, this time inverted
     """
 
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    logger.addHandler(logging.StreamHandler())
+
     island_factory = IslandMeshFactory()
-    island = island_factory.new()
+    island = island_factory.new((x_width, y_height, z_depth), scale)
     island.apply_noise()
+    island.apply_threshold(.15)
 
     # heightmap = generate_heightmap(x_width, y_height, empty_world)
     # heightmap = filter_cutoff(x_width, y_height, heightmap, ocean_level)
-    print(island.mesh.data)
-    visualize3d(island.mesh.data)
+    # print(island.mesh.data)
+    visualize_voxels(island.mesh.data)
     #
     # visualize(filtered_heightmap)
     # island = render_map(filtered_heightmap)

@@ -1,4 +1,5 @@
 import numpy
+import logging
 
 
 class MeshData:
@@ -7,6 +8,7 @@ class MeshData:
 
     def set_point(self, x, y, z, value):
         self.data[x, y, z] = value
+        logging.debug(f'Set [{x}, {y}, {z}] = {value}')
 
     def get_point(self, x, y, z):
         return self.data[x, y, z]
