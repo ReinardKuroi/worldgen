@@ -3,6 +3,8 @@ import random
 import noise
 import numpy
 
+from worldgen.island_mesh.island_mesh_factory import IslandMeshFactory
+
 
 def generate_heightmap(x_width, y_height, world):
     scale: float = 256
@@ -68,11 +70,6 @@ def render_map(filtered_heightmap):
     pass
 
 
-def provide_default_world(x_width, y_height):
-    world = numpy.zeros((x_width, y_height))
-    return world
-
-
 def main():
     ocean_level: float = .2
     tree_growth_range: (float, float)
@@ -90,11 +87,14 @@ def main():
         To make it 3d it is possible to add another noise iteration, this time inverted
     """
 
-    empty_world = provide_default_world(x_width, y_height)
-    heightmap = generate_heightmap(x_width, y_height, empty_world)
-    heightmap = filter_cutoff(x_width, y_height, heightmap, ocean_level)
-    visualize(heightmap)
-    visualize3d(heightmap)
+    island_factory = IslandMeshFactory()
+    island = island_factory.new()
+    island.apply_noise()
+
+    # heightmap = generate_heightmap(x_width, y_height, empty_world)
+    # heightmap = filter_cutoff(x_width, y_height, heightmap, ocean_level)
+    print(island.mesh.data)
+    visualize3d(island.mesh.data)
     #
     # visualize(filtered_heightmap)
     # island = render_map(filtered_heightmap)

@@ -26,6 +26,8 @@
 ## Problems
 
 How to efficiently represent vertex data and manipulate it? Look into python matrices.
+- try [`pointcloud`](https://pointclouds.org/)
+- matplotlib voxels
 
 There must be a way to better represent 3 meshes than a 2d array with floats.
 
