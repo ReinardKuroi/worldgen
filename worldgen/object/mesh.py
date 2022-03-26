@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from matplotlib import pyplot
 from skimage.measure import marching_cubes
 
@@ -13,14 +15,17 @@ class MeshObject:
         self.normals = normals
         self.values = values
 
-    def save_as_obj(self, filename):
+    def save_as_obj(self, filename=None):
+        if not filename:
+            filename = 'island' + datetime.now().strftime('%d%m%y_%H%M%S') + '.obj'
         with open(filename, 'w') as f:
+            f.write(f'Mesh o\n')
             for vertex in self.vertexes:
                 f.write(f'v {vertex[0]} {vertex[1]} {vertex[2]}\n')
             for normal in self.normals:
                 f.write(f'vn {normal[0]} {normal[1]} {normal[2]}\n')
             for face in self.faces:
-                f.write(f'f {face[0]}//{face[0]} {face[1]}//{face[1]} {face[2]}//{face[2]}\n')
+                f.write(f'f {face[0]}/{face[0]} {face[1]}/{face[1]} {face[2]}/{face[2]}\n')
 
     def render(self):
         fig = pyplot.figure()

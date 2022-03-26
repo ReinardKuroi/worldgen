@@ -116,6 +116,7 @@ def main():
 
     mesh_object = MeshObject(island.mesh)
     mesh_object.render()
+    mesh_object.save_as_obj()
     #
     # visualize(filtered_heightmap)
     # island = render_map(filtered_heightmap)
