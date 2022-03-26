@@ -4,8 +4,11 @@ from matplotlib import pyplot, cm
 import random
 import noise
 import numpy
+from skimage.measure import marching_cubes
+
 
 from worldgen.island_mesh.island_mesh_factory import IslandMeshFactory
+from worldgen.object.mesh import MeshObject
 
 
 def generate_heightmap(x_width, y_height, world):
@@ -84,19 +87,15 @@ def filter_cutoff(x_width, y_height, world, ground_zero):
     return world
 
 
-def render_map(filtered_heightmap):
-    pass
-
-
 def main():
     ocean_level: float = .2
     tree_growth_range: (float, float)
     island_size: float
     island_complexity: float
 
-    x_width: int = 256
-    y_height: int = 256
-    z_depth: int = 256
+    x_width: int = 32
+    y_height: int = 32
+    z_depth: int = 32
     scale: float = .01
 
     """
@@ -113,14 +112,10 @@ def main():
 
     island_factory = IslandMeshFactory()
     island = island_factory.new((x_width, y_height, z_depth), scale)
-    # island.apply_noise()
-    # island.apply_threshold(.45)
-    island.apply_combined_noise(.8)
+    island.apply_combined_noise(.3)
 
-    # heightmap = generate_heightmap(x_width, y_height, empty_world)
-    # heightmap = filter_cutoff(x_width, y_height, heightmap, ocean_level)
-    # print(island.mesh.data)
-    visualize_points(island.mesh.data)
+    mesh_object = MeshObject(island.mesh)
+    mesh_object.render()
     #
     # visualize(filtered_heightmap)
     # island = render_map(filtered_heightmap)

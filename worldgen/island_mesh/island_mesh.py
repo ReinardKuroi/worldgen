@@ -41,8 +41,7 @@ class IslandMesh:
         for x in range(self.x_width):
             for y in range(self.y_height):
                 for z in range(self.z_depth):
-                    perlin = self.apply_noise_on_point(x, y, z)
-                    if perlin > threshold:
+                    if self.apply_noise_on_point(x, y, z) * self.mesh.distance_from_center(x, y, z) > threshold:
                         self.mesh.set_point(x, y, z, 1)
 
     def normalize_mesh(self):
