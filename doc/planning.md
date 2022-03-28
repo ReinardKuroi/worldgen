@@ -6,6 +6,7 @@ Easiest way is to have a high-level aggregator class `IslandMesh` that combines 
 It also keeps data on additional props and textures.
 `MeshData` keeps mesh data and implements methods necessary to transform this mesh.
 `IslandMeshFactory` provides an interface for generating new islands.
+`MeshObject` is responsible for data -> .obj transformation.
 
 On an abstract level, island is generated in a few steps:
 
