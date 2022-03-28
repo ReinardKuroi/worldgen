@@ -4,7 +4,7 @@ from typing import Tuple
 from noise.perlin import SimplexNoise
 import logging
 
-from worldgen.island_mesh.mesh_data import MeshData
+from worldgen.island_mesh.mesh_data import MeshData3D
 
 
 class IslandMesh:
@@ -13,9 +13,9 @@ class IslandMesh:
         self.y_height = size[1]
         self.x_width = size[2]
         self.scale = scale
-        self.mesh = MeshData(self.x_width,
-                             self.y_height,
-                             self.z_depth)
+        self.mesh = MeshData3D(self.x_width,
+                               self.y_height,
+                               self.z_depth)
 
     def apply_noise(self):
         logging.info('Applying basic perlin noise...')
