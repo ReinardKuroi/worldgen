@@ -1,7 +1,7 @@
-from typing import Tuple
-
 import numpy
 import logging
+
+from skimage.measure import marching_cubes
 
 
 def distance(a: numpy.array, b: numpy.array):
@@ -16,6 +16,7 @@ class MeshData3D:
         self.data = numpy.zeros((x, y, z))
         self._center_point = numpy.array([x // 2, y // 2, z // 2])
         self._diagonal = distance(self._center_point, numpy.array([0, 0, 0]))
+        self.__marching_func = marching_cubes
 
     @property
     def max_value(self):
@@ -28,7 +29,8 @@ class MeshData3D:
                     yield x, y, z
 
     def normalize(self):
-        self.data = self.data / self.max_value
+        self.data -= self.data.min()
+        self.data /= self.data.max()
 
     def set_point(self, x, y, z, value):
         self.data[x, y, z] = value
@@ -43,6 +45,14 @@ class MeshData3D:
         normalized_dist = dist / self._diagonal
         logging.debug(f'{dist=} {normalized_dist=}')
         return normalized_dist * normalized_dist
+
+    def apply_function(self, func):
+        for x, y, z in self.iterate():
+            value = func(x, y, z)
+            self.set_point(x, y, z, value)
+
+    def march(self, **kwargs):
+        return self.__marching_func(self.data, **kwargs)
 
 
 class MeshData2D:
@@ -61,3 +71,8 @@ class MeshData2D:
 
     def get_point(self, x, y):
         return self.data[x, y]
+
+    def apply_function(self, func):
+        for x, y in self.iterate():
+            value = func(x, y)
+            self.set_point(x, y, value)

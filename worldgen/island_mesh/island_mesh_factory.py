@@ -5,5 +5,5 @@ class IslandMeshFactory:
     def __init__(self):
         self.__factory = IslandMesh
 
-    def new(self, size=(256, 256, 256), scale=.1):
-        return self.__factory(size=size, scale=scale)
+    def new(self, *args, **kwargs):
+        return self.__factory(*args, **kwargs)

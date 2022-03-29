@@ -1,14 +1,16 @@
 import logging
+import subprocess
 
 from matplotlib import pyplot, cm
 import random
 import noise
 import numpy
-from skimage.measure import marching_cubes
 
 
 from worldgen.island_mesh.island_mesh_factory import IslandMeshFactory
+from worldgen.island_mesh.mesh_data import MeshData3D
 from worldgen.object.mesh import MeshObject
+from worldgen.shapes.basic import sphere
 
 
 def generate_heightmap(x_width, y_height, world):
@@ -88,15 +90,13 @@ def filter_cutoff(x_width, y_height, world, ground_zero):
 
 
 def main():
-    ocean_level: float = .2
+    ocean_level: float = .4
     tree_growth_range: (float, float)
     island_size: float
     island_complexity: float
 
-    x_width: int = 32
-    y_height: int = 32
-    z_depth: int = 32
-    scale: float = .01
+    xyz = (16, 16, 16)
+    scale: float = 100
 
     """
         Generate some sort of noise map for the island shape
@@ -111,14 +111,12 @@ def main():
     logger.addHandler(logging.StreamHandler())
 
     island_factory = IslandMeshFactory()
-    island = island_factory.new((x_width, y_height, z_depth), scale)
-    island.apply_combined_noise(.3)
+    island = island_factory.new(xyz, scale=scale, ocean_level=ocean_level)
+    island.apply_noise()
+    filter = MeshData3D(*xyz)
+    filter.apply_function(sphere)
+    island.mesh.data = filter.data * island.mesh.data
 
-    mesh_object = MeshObject(island.mesh)
-    mesh_object.render()
-    mesh_object.save_as_obj()
-    #
-    # visualize(filtered_heightmap)
-    # island = render_map(filtered_heightmap)
-
-    
+    mesh_object = MeshObject(*island.march())
+    file = mesh_object.save_as_obj()
+    subprocess.run('C:\Program Files\VCG\MeshLab\meshlab.exe ' + file)
