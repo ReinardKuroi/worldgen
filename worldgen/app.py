@@ -62,8 +62,7 @@ def visualize_voxels(data):
 def visualize_points(data):
     fig = pyplot.figure()
     ax = fig.gca(projection='3d')
-    ax.scatter(*data.nonzero())
-    ax.axis('off')
+    ax.scatter(*data.nonzero(), cmap='coolwarm')
     pyplot.show()
 
 
@@ -90,12 +89,12 @@ def filter_cutoff(x_width, y_height, world, ground_zero):
 
 
 def main():
-    ocean_level: float = .4
+    ocean_level: float = 0.37
     tree_growth_range: (float, float)
     island_size: float
     island_complexity: float
 
-    xyz = (16, 16, 16)
+    xyz = (32, 32, 32)
     scale: float = 100
 
     """
@@ -113,9 +112,7 @@ def main():
     island_factory = IslandMeshFactory()
     island = island_factory.new(xyz, scale=scale, ocean_level=ocean_level)
     island.apply_noise()
-    filter = MeshData3D(*xyz)
-    filter.apply_function(sphere)
-    island.mesh.data = filter.data * island.mesh.data
+    island.normalize_mesh()
 
     mesh_object = MeshObject(*island.march())
     file = mesh_object.save_as_obj()

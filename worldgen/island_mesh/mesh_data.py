@@ -1,6 +1,7 @@
 import numpy
 import logging
 
+from scipy.special import expit
 from skimage.measure import marching_cubes
 
 
@@ -14,23 +15,24 @@ class MeshData3D:
         self.y = y
         self.z = z
         self.data = numpy.zeros((x, y, z))
-        self._center_point = numpy.array([x // 2, y // 2, z // 2])
-        self._diagonal = distance(self._center_point, numpy.array([0, 0, 0]))
+        self.grid = numpy.meshgrid(*(numpy.arange(s) for s in self.data.shape), indexing='ij')
+        self._diagonal = self.data.diagonal()
         self.__marching_func = marching_cubes
 
     @property
     def max_value(self):
         return numpy.max(self.data)
 
-    def iterate(self):
-        for x in range(self.x):
-            for y in range(self.y):
-                for z in range(self.z):
-                    yield x, y, z
+    def _apply_function(self, func):
+        self.data = func(self.data)
+
+    def create_scalar_field_from_function(self, func):
+        if not isinstance(func, numpy.vectorize):
+            func = numpy.vectorize(func)
+        return func(*self.grid)
 
     def normalize(self):
-        self.data -= self.data.min()
-        self.data /= self.data.max()
+        self._apply_function(expit)
 
     def set_point(self, x, y, z, value):
         self.data[x, y, z] = value
@@ -38,18 +40,6 @@ class MeshData3D:
 
     def get_point(self, x, y, z):
         return self.data[x, y, z]
-
-    def distance_from_center(self, x, y, z):
-        p = numpy.array([x, y, z])
-        dist = self._diagonal - distance(self._center_point, p)
-        normalized_dist = dist / self._diagonal
-        logging.debug(f'{dist=} {normalized_dist=}')
-        return normalized_dist * normalized_dist
-
-    def apply_function(self, func):
-        for x, y, z in self.iterate():
-            value = func(x, y, z)
-            self.set_point(x, y, z, value)
 
     def march(self, **kwargs):
         return self.__marching_func(self.data, **kwargs)
@@ -76,3 +66,36 @@ class MeshData2D:
         for x, y in self.iterate():
             value = func(x, y)
             self.set_point(x, y, value)
+
+    def to_3d(self, z_max) -> MeshData3D:
+        volumetric_data = MeshData3D(self.x, self.y, z_max)
+        for x, y in self.iterate():
+            value = self.get_point(x, y)
+
+        return volumetric_data
+
+
+def expand_float_to_linear(value: float) -> numpy.ndarray:
+    length: int = numpy.ceil(value).astype(int)
+    linear: numpy.ndarray = numpy.ones(length,)
+    linear[-1] = value - length + 1
+    return linear
+
+
+def extend_linear_to_length(linear: numpy.ndarray, length: int) -> numpy.ndarray:
+    linear.resize((length,))
+
+
+def test_iteration(array: numpy.ndarray):
+    x_dim, y_dim, z_dim = array.shape
+    for x in range(x_dim):
+        for y in range(y_dim):
+            for z in range(z_dim):
+                a = array[x, y, z]
+
+
+def test_nditer(array: numpy.ndarray):
+    with numpy.nditer(array, flags=['multi_index']) as field:
+        for point in field:
+            point[...] = point
+
