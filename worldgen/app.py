@@ -6,11 +6,8 @@ import random
 import noise
 import numpy
 
-
 from worldgen.island_mesh.island_mesh_factory import IslandMeshFactory
-from worldgen.island_mesh.mesh_data import MeshData3D
 from worldgen.object.mesh import MeshObject
-from worldgen.shapes.basic import sphere
 
 
 def generate_heightmap(x_width, y_height, world):
@@ -20,12 +17,12 @@ def generate_heightmap(x_width, y_height, world):
     lacunarity: float = 1.5
 
     random.seed()
-    global_random_offset_x = random.randint(0, 1024*1024)
-    global_random_offset_y = random.randint(0, 1024*1024)
+    global_random_offset_x = random.randint(0, 1024 * 1024)
+    global_random_offset_y = random.randint(0, 1024 * 1024)
 
     for x in range(x_width):
         for y in range(y_height):
-            world[x][y] = noise.pnoise2((x + global_random_offset_x)/scale, (y + global_random_offset_y)/scale,
+            world[x][y] = noise.pnoise2((x + global_random_offset_x) / scale, (y + global_random_offset_y) / scale,
                                         octaves=octaves,
                                         persistence=persistence,
                                         lacunarity=lacunarity,
@@ -62,19 +59,20 @@ def visualize_voxels(data):
 def random_offset():
     import random
     random.seed()
-    x = random.random() * 2**12
-    y = random.random() * 2**12
-    z = random.random() * 2**12
+    x = random.random() * 2 ** 12
+    y = random.random() * 2 ** 12
+    z = random.random() * 2 ** 12
     return x, y, z
 
 
 def main():
-    ocean_level: float = 0.5
     tree_growth_range: (float, float)
-    island_size: float
-    island_complexity: float
+    island_size: float = .5
+    island_complexity: float = 3
+    ocean_level: float = .2
+    mountain_level: float = .7
 
-    xyz = (64, 64, 64)
+    xyz = (128, 64, 64)
     offset = random_offset()
     scale: float = 16
 
@@ -90,12 +88,15 @@ def main():
     logger.setLevel(logging.DEBUG)
     logger.addHandler(logging.StreamHandler())
 
-    island_factory = IslandMeshFactory()
-    island = island_factory.new(xyz, offset=offset, scale=scale, ocean_level=ocean_level)
-    island.apply_3d_noise()
-    # island.apply_2d_noise()
-    # island.apply_sphere()
+    island_factory = IslandMeshFactory(xyz, offset=offset, scale=scale, level=island_size, ocean_level=ocean_level,
+                                       mountain_level=mountain_level, octaves=island_complexity)
+    island = island_factory.new()
+    # island.apply_combined_noise()
+    island.apply_2d_noise()
+    # island.apply_3d_noise()
+    logger.debug(f'{island.mesh.data.min()=} {island.mesh.data.max()=}')
     island.normalize_mesh()
+    logger.debug(f'{island.mesh.data.min()=} {island.mesh.data.max()=}')
 
     mesh_object = MeshObject(*island.march())
     file = mesh_object.save_as_obj()

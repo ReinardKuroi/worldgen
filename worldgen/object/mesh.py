@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from matplotlib import pyplot
@@ -12,6 +13,7 @@ class MeshObject:
     def save_as_obj(self, filename=None):
         if not filename:
             filename = 'island' + datetime.now().strftime('%d%m%y_%H%M%S') + '.obj'
+        logging.info(f'Saving as {filename}')
         with open(filename, 'w') as f:
             f.writelines(map(self.vertex_to_str, self.vertexes))
             f.writelines(map(self.normal_to_str, self.normals))

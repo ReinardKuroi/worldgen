@@ -3,13 +3,15 @@ from typing import Tuple
 import noise
 import logging
 
+import numpy
+
 from worldgen.island_mesh.mesh_data import MeshData3D
 
 
 class IslandMesh:
     def __init__(self, size: Tuple[int, int, int], offset: Tuple[int, int, int] = (0, 0, 0), scale: float = .9,
-                 ocean_level: float = 0):
-        self.octaves = 3
+                 level: float = .5, ocean_level: float = 0, mountain_level: float = 1.,  octaves: int = 3):
+        self.octaves = octaves
         self.persistence = .5
         self.lacunarity = 2.
         self.z_depth = size[0]
@@ -20,11 +22,20 @@ class IslandMesh:
         self.z_offset = offset[2]
 
         self.scale = scale
+        self.level = level
         self.ocean_level = ocean_level
+        self.mountain_level = mountain_level
         self.mesh = MeshData3D(self.x_width,
                                self.y_height,
                                self.z_depth)
         self.radius = (self.x_width + self.y_height + self.z_depth) / 6
+        self._sma_x = self.x_width / 2
+        self._sma_y = self.y_height / 2
+        self._sma_z = self.z_depth / 2
+
+        self._gradient_3d_v = numpy.vectorize(self._gradient_3d)
+        self._gradient_2d_v = numpy.vectorize(self._gradient_2d)
+        self._zero_level_v = numpy.vectorize(self._zero_level)
 
     def apply_3d_noise(self):
         logging.info('Applying basic perlin noise...')
@@ -37,47 +48,61 @@ class IslandMesh:
         logging.info('Applying 2d perlin noise...')
         self.mesh.data = self.mesh.create_scalar_field_from_function(self.noise_2d)
 
+    def apply_combined_noise(self):
+        self.mesh.data = self.mesh.create_scalar_field_from_function(self.noise_combined)
+
     def normalize_mesh(self):
         logging.info('Normalizing vertex probability...')
         self.mesh.normalize()
 
-    def noise_3d(self, x: int, y: int, z: int) -> float:
-        scale: float = self.scale
-        p3d = _perlin_3d((x + self.x_offset) / scale,
-                         (y + self.y_offset) / scale,
-                         (z + self.z_offset) / scale,
+    def noise_combined(self, x: int, y: int, z: int) -> float:
+        p3d = _perlin_3d((x + self.x_offset) / self.scale,
+                         (y + self.y_offset) / self.scale,
+                         (z + self.z_offset) / self.scale,
                          octaves=self.octaves,
                          persistence=self.persistence,
                          lacunarity=self.lacunarity)
-        gradient = self._gradient_3d(x, y, z)
-        if p3d < self.ocean_level and 0 < gradient:
-            return gradient * p3d
-        return p3d - gradient
+        p2d = self.noise_2d(x, y, z) / 2
+        if p2d > self.mountain_level:
+            return p3d
+        return p3d - p2d + self.ocean_level
+
+    def noise_3d(self, x: int, y: int, z: int) -> float:
+        p3d = _perlin_3d((x + self.x_offset) / self.scale,
+                         (y + self.y_offset) / self.scale,
+                         (z + self.z_offset) / self.scale,
+                         octaves=self.octaves,
+                         persistence=self.persistence,
+                         lacunarity=self.lacunarity)
+        gradient = self._gradient_3d(x, y, z) / 2
+        if gradient > self.mountain_level:
+            return p3d
+        return p3d - gradient + self.ocean_level
 
     def noise_2d(self, x: int, y: int, z: int) -> float:
         """turn perlin2d into a 3d scalar field"""
-        scale: float = self.scale
-        p2d = _perlin_2d((x + self.x_offset) / scale,
-                         (z + self.z_offset) / scale,
+        p2d = _perlin_2d((x + self.x_offset) / self.scale,
+                         (z + self.z_offset) / self.scale,
                          octaves=self.octaves,
                          persistence=self.persistence,
                          lacunarity=self.lacunarity)
-        multiplier = 1
-
-        if p2d > 0:
-            multiplier = self._gradient_2d(x, z)
-        result = (y - self.y_height / 2) / scale - p2d * multiplier
-        return result
+        gradient = self._gradient_2d(x, z)
+        zero_level = self._zero_level(y)
+        return zero_level - p2d + gradient
 
     def _gradient_2d(self, x: int, z: int) -> float:
-        return 1 - ((x - self.x_width / 2) ** 2 + (z - self.z_depth / 2) ** 2) / self.radius ** 2
+        return numpy.tanh((x / self._sma_x - 1)**2 + (z / self._sma_z - 1) ** 2)
 
-    def _gradient_3d(self, x: int, y: int, z: int) -> float:
-        return 1 - 2 * ((x - self.x_width / 2) ** 2 + (y - self.y_height / 2) ** 2 + (
+    def _gradient_3d(self, x: int, y: int, z: int) -> float:    # FIXME:TOO SLOW
+        gradient = 1 - 2 * ((x - self.x_width / 2) ** 2 + (y - self.y_height / 2) ** 2 + (
                     z - self.z_depth / 2) ** 2) / self.radius ** 2
+        return numpy.tanh(gradient)
+
+    def _zero_level(self, y: int) -> float:
+        return y / (self.y_height * self.mountain_level) - self.ocean_level
 
     def march(self):
-        vertexes, faces, normals, _ = self.mesh.march(level=self.ocean_level, gradient_direction='descent')
+        vertexes, faces, normals, _ = self.mesh.march(level=self.level, gradient_direction='descent')
         return vertexes, faces, normals
 
     def sphere(self, x, y, z):

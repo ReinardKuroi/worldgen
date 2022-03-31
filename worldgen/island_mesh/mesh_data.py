@@ -51,6 +51,7 @@ class MeshData3D:
         pyplot.show()
 
     def march(self, **kwargs):
+        logging.info(f'Marching cubes...')
         return self.__marching_func(self.data, **kwargs)
 
 
