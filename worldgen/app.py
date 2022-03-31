@@ -59,13 +59,23 @@ def visualize_voxels(data):
     pyplot.show()
 
 
+def random_offset():
+    import random
+    random.seed()
+    x = random.random() * 2**12
+    y = random.random() * 2**12
+    z = random.random() * 2**12
+    return x, y, z
+
+
 def main():
-    ocean_level: float = 0.45
+    ocean_level: float = 0.5
     tree_growth_range: (float, float)
     island_size: float
     island_complexity: float
 
     xyz = (256, 256, 256)
+    offset = random_offset()
     scale: float = 64
 
     """
@@ -81,8 +91,8 @@ def main():
     logger.addHandler(logging.StreamHandler())
 
     island_factory = IslandMeshFactory()
-    island = island_factory.new(xyz, scale=scale, ocean_level=ocean_level)
-    island.apply_noise()
+    island = island_factory.new(xyz, offset=offset, scale=scale, ocean_level=ocean_level)
+    island.apply_3d_noise()
     # island.apply_2d_noise()
     # island.apply_sphere()
     island.normalize_mesh()
