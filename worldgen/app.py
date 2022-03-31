@@ -74,9 +74,9 @@ def main():
     island_size: float
     island_complexity: float
 
-    xyz = (256, 256, 256)
+    xyz = (64, 64, 64)
     offset = random_offset()
-    scale: float = 64
+    scale: float = 16
 
     """
         Generate some sort of noise map for the island shape

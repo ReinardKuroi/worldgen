@@ -24,7 +24,7 @@ class IslandMesh:
         self.mesh = MeshData3D(self.x_width,
                                self.y_height,
                                self.z_depth)
-        self.radius = (self.x_width + self.y_height + self.z_depth) / 12
+        self.radius = (self.x_width + self.y_height + self.z_depth) / 6
 
     def apply_3d_noise(self):
         logging.info('Applying basic perlin noise...')
@@ -49,11 +49,10 @@ class IslandMesh:
                          octaves=self.octaves,
                          persistence=self.persistence,
                          lacunarity=self.lacunarity)
-        multiplier = self._gradient_3d(x, y, z)
-        if p3d < 0:
-            multiplier = 1
-        result = p3d * multiplier
-        return result
+        gradient = self._gradient_3d(x, y, z)
+        if p3d < self.ocean_level and 0 < gradient:
+            return gradient * p3d
+        return p3d - gradient
 
     def noise_2d(self, x: int, y: int, z: int) -> float:
         """turn perlin2d into a 3d scalar field"""
@@ -74,7 +73,7 @@ class IslandMesh:
         return 1 - ((x - self.x_width / 2) ** 2 + (z - self.z_depth / 2) ** 2) / self.radius ** 2
 
     def _gradient_3d(self, x: int, y: int, z: int) -> float:
-        return 1 - 2*((x - self.x_width / 2) ** 2 + (y - self.y_height / 2) ** 2 + (
+        return 1 - 2 * ((x - self.x_width / 2) ** 2 + (y - self.y_height / 2) ** 2 + (
                     z - self.z_depth / 2) ** 2) / self.radius ** 2
 
     def march(self):
