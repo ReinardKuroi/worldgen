@@ -69,12 +69,12 @@ def main():
     tree_growth_range: (float, float)
     island_size: float = .5
     island_complexity: float = 3
-    ocean_level: float = .2
-    mountain_level: float = .7
+    ocean_level: float = .5
+    mountain_level: float = .3
 
-    xyz = (128, 64, 64)
+    xyz = (256, 256, 256)
     offset = random_offset()
-    scale: float = 16
+    scale: float = 64
 
     """
         Generate some sort of noise map for the island shape
@@ -92,8 +92,8 @@ def main():
                                        mountain_level=mountain_level, octaves=island_complexity)
     island = island_factory.new()
     # island.apply_combined_noise()
-    island.apply_2d_noise()
-    # island.apply_3d_noise()
+    # island.apply_2d_noise()
+    island.apply_3d_noise()
     logger.debug(f'{island.mesh.data.min()=} {island.mesh.data.max()=}')
     island.normalize_mesh()
     logger.debug(f'{island.mesh.data.min()=} {island.mesh.data.max()=}')

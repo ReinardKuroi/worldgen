@@ -33,10 +33,6 @@ class IslandMesh:
         self._sma_y = self.y_height / 2
         self._sma_z = self.z_depth / 2
 
-        self._gradient_3d_v = numpy.vectorize(self._gradient_3d)
-        self._gradient_2d_v = numpy.vectorize(self._gradient_2d)
-        self._zero_level_v = numpy.vectorize(self._zero_level)
-
     def apply_3d_noise(self):
         logging.info('Applying basic perlin noise...')
         self.mesh.data = self.mesh.create_scalar_field_from_function(self.noise_3d)
@@ -74,10 +70,8 @@ class IslandMesh:
                          octaves=self.octaves,
                          persistence=self.persistence,
                          lacunarity=self.lacunarity)
-        gradient = self._gradient_3d(x, y, z) / 2
-        if gradient > self.mountain_level:
-            return p3d
-        return p3d - gradient + self.ocean_level
+        gradient = self._gradient_3d(x, y, z) * (1 + self.ocean_level)
+        return (gradient - p3d)**2 - self.mountain_level
 
     def noise_2d(self, x: int, y: int, z: int) -> float:
         """turn perlin2d into a 3d scalar field"""
@@ -88,15 +82,13 @@ class IslandMesh:
                          lacunarity=self.lacunarity)
         gradient = self._gradient_2d(x, z)
         zero_level = self._zero_level(y)
-        return zero_level - p2d + gradient
+        return gradient - p2d + zero_level
 
     def _gradient_2d(self, x: int, z: int) -> float:
         return numpy.tanh((x / self._sma_x - 1)**2 + (z / self._sma_z - 1) ** 2)
 
-    def _gradient_3d(self, x: int, y: int, z: int) -> float:    # FIXME:TOO SLOW
-        gradient = 1 - 2 * ((x - self.x_width / 2) ** 2 + (y - self.y_height / 2) ** 2 + (
-                    z - self.z_depth / 2) ** 2) / self.radius ** 2
-        return numpy.tanh(gradient)
+    def _gradient_3d(self, x: int, y: int, z: int) -> float:
+        return numpy.tanh((x / self._sma_x - 1)**2 + (y / self._sma_y - 1)**2 + (z / self._sma_z - 1) ** 2)
 
     def _zero_level(self, y: int) -> float:
         return y / (self.y_height * self.mountain_level) - self.ocean_level
