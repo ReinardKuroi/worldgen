@@ -59,43 +59,14 @@ def visualize_voxels(data):
     pyplot.show()
 
 
-def visualize_points(data):
-    fig = pyplot.figure()
-    ax = fig.gca(projection='3d')
-    ax.scatter(*data.nonzero(), cmap='coolwarm')
-    pyplot.show()
-
-
-def filter_cutoff(x_width, y_height, world, ground_zero):
-    ocean = [0, .1]
-    beach = [.1, .15]
-    plains = [.15, .25]
-    mountains = [.25, 1]
-    world = world/numpy.max(world)
-    for x in range(x_width):
-        for y in range(y_height):
-            z = world[x][y]
-            if z in ocean:
-                world[x][y] = 0
-            if z in beach:
-                world[x][y] = .1
-            if z in plains:
-                world[x][y] = .15
-            if z in mountains:
-                world[x][y] = .25
-            # if world[x][y] < ground_zero:
-            #     world[x][y] = None
-    return world
-
-
 def main():
-    ocean_level: float = 0.37
+    ocean_level: float = 0.45
     tree_growth_range: (float, float)
     island_size: float
     island_complexity: float
 
-    xyz = (32, 32, 32)
-    scale: float = 100
+    xyz = (256, 256, 256)
+    scale: float = 64
 
     """
         Generate some sort of noise map for the island shape
@@ -106,12 +77,14 @@ def main():
     """
 
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     logger.addHandler(logging.StreamHandler())
 
     island_factory = IslandMeshFactory()
     island = island_factory.new(xyz, scale=scale, ocean_level=ocean_level)
     island.apply_noise()
+    # island.apply_2d_noise()
+    # island.apply_sphere()
     island.normalize_mesh()
 
     mesh_object = MeshObject(*island.march())

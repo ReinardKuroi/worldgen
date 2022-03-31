@@ -4,7 +4,7 @@ from matplotlib import pyplot
 
 
 class MeshObject:
-    def __init__(self, vertexes, faces, normals):
+    def __init__(self, vertexes, faces, normals, *args):
         self.vertexes = vertexes
         self.faces = faces
         self.normals = normals
