@@ -4,11 +4,16 @@ import logging
 import scipy.constants
 from matplotlib import pyplot
 from scipy.special import expit
+from scipy.linalg import expm, norm
 from skimage.measure import marching_cubes
 
 
 def distance(a: numpy.array, b: numpy.array):
     return numpy.linalg.norm(b - a)
+
+
+def rot_matrix(axis: numpy.ndarray, angle: float):
+    return expm((numpy.cross(numpy.eye(3), axis/norm(axis)*angle))).round(15)
 
 
 class MeshData3D:
@@ -35,6 +40,10 @@ class MeshData3D:
 
     def normalize(self):
         self._apply_function(expit)
+
+    def mirror(self):
+        flip_matrix = numpy.array([[1, 0, 0], [0, -1, 0], [0, 0, 1]])
+        self.data.dot(flip_matrix)
 
     def set_point(self, x, y, z, value):
         self.data[x, y, z] = value

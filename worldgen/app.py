@@ -72,7 +72,7 @@ def main():
     island_complexity: float = 5
     ocean_level: float = .47
     mountain_level: float = .7
-    resolution = 8
+    resolution = 16
     xyz = (1024//resolution, 512//resolution, 1024//resolution)
     offset = random_offset()
     scale: float = 256//resolution
@@ -96,6 +96,7 @@ def main():
     time_init = datetime.now()
     island.apply_combined_noise()
     island.normalize_mesh()
+    # island.flip_mesh()
     time_gen = datetime.now()
     mesh_object = MeshObject(*island.march())
     time_end = datetime.now()
@@ -104,4 +105,4 @@ def main():
     logging.info(f'Generation time: {time_gen - time_init}')
     logging.info(f'Render time: {time_end - time_gen}')
     file = mesh_object.save_as_obj()
-    # subprocess.run('C:\Program Files\VCG\MeshLab\meshlab.exe ' + file)
+    subprocess.run('C:\Program Files\VCG\MeshLab\meshlab.exe ' + file)

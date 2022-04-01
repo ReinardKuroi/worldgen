@@ -10,13 +10,16 @@ class MeshObject:
         self.faces = faces
         self.normals = normals
 
-    def save_as_obj(self, filename=None):
+    def save_as_obj(self, filename=None, smooth=False, pre_bake_normals=False):
         if not filename:
             filename = 'island' + datetime.now().strftime('%d%m%y_%H%M%S') + '.obj'
         logging.info(f'Saving as {filename}')
         with open(filename, 'w') as f:
+            if smooth:
+                f.write(f's 1')
             f.writelines(map(self.vertex_to_str, self.vertexes))
-            f.writelines(map(self.normal_to_str, self.normals))
+            if pre_bake_normals:
+                f.writelines(map(self.normal_to_str, self.normals))
             f.writelines(map(self.face_to_str, self.faces + 1))
         return filename
 
