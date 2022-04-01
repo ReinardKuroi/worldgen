@@ -1,5 +1,6 @@
 import logging
 import subprocess
+from datetime import datetime
 
 from matplotlib import pyplot, cm
 import random
@@ -67,14 +68,14 @@ def random_offset():
 
 def main():
     tree_growth_range: (float, float)
-    island_size: float = .5
-    island_complexity: float = 3
-    ocean_level: float = .5
-    mountain_level: float = .3
-
-    xyz = (512, 64, 512)
+    island_size: float = .4
+    island_complexity: float = 5
+    ocean_level: float = .47
+    mountain_level: float = .7
+    resolution = 8
+    xyz = (1024//resolution, 512//resolution, 1024//resolution)
     offset = random_offset()
-    scale: float = 64
+    scale: float = 256//resolution
 
     """
         Generate some sort of noise map for the island shape
@@ -85,19 +86,22 @@ def main():
     """
 
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     logger.addHandler(logging.StreamHandler())
 
     island_factory = IslandMeshFactory(xyz, offset=offset, scale=scale, level=island_size, ocean_level=ocean_level,
                                        mountain_level=mountain_level, octaves=island_complexity)
+    time_start = datetime.now()
     island = island_factory.new()
+    time_init = datetime.now()
     island.apply_combined_noise()
-    # island.apply_2d_noise()
-    # island.apply_3d_noise()
-    logger.debug(f'{island.mesh.data.min()=} {island.mesh.data.max()=}')
     island.normalize_mesh()
-    logger.debug(f'{island.mesh.data.min()=} {island.mesh.data.max()=}')
-
+    time_gen = datetime.now()
     mesh_object = MeshObject(*island.march())
+    time_end = datetime.now()
+    logging.info(f'Total time: {time_end - time_start}')
+    logging.info(f'Init: {time_init - time_start}')
+    logging.info(f'Generation time: {time_gen - time_init}')
+    logging.info(f'Render time: {time_end - time_gen}')
     file = mesh_object.save_as_obj()
-    subprocess.run('C:\Program Files\VCG\MeshLab\meshlab.exe ' + file)
+    # subprocess.run('C:\Program Files\VCG\MeshLab\meshlab.exe ' + file)

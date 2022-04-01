@@ -53,6 +53,9 @@ class IslandMesh:
         self.mesh.normalize()
 
     def noise_combined(self, x: int, y: int, z: int) -> float:
+        local_x = (x + self.x_offset) / self.scale
+        local_y = (y + self.y_offset) / self.scale
+        local_z = (z + self.z_offset) / self.scale
         p3d = self.noise_3d(x, y, z)
         p2d = self.noise_2d(x, y, z)
         gradient = p2d * (1 + self.ocean_level)
