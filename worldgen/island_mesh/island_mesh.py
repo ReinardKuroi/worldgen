@@ -45,6 +45,7 @@ class IslandMesh:
         self.mesh.data = self.mesh.create_scalar_field_from_function(self.noise_2d)
 
     def apply_combined_noise(self):
+        logging.info('Applying multiple perlin noise iterations...')
         self.mesh.data = self.mesh.create_scalar_field_from_function(self.noise_combined)
 
     def normalize_mesh(self):
@@ -52,16 +53,12 @@ class IslandMesh:
         self.mesh.normalize()
 
     def noise_combined(self, x: int, y: int, z: int) -> float:
-        p3d = _perlin_3d((x + self.x_offset) / self.scale,
-                         (y + self.y_offset) / self.scale,
-                         (z + self.z_offset) / self.scale,
-                         octaves=self.octaves,
-                         persistence=self.persistence,
-                         lacunarity=self.lacunarity)
-        p2d = self.noise_2d(x, y, z) / 2
-        if p2d > self.mountain_level:
-            return p3d
-        return p3d - p2d + self.ocean_level
+        p3d = self.noise_3d(x, y, z)
+        p2d = self.noise_2d(x, y, z)
+        gradient = p2d * (1 + self.ocean_level)
+        if gradient < 0:
+            return -p3d * gradient
+        return p3d * gradient
 
     def noise_3d(self, x: int, y: int, z: int) -> float:
         p3d = _perlin_3d((x + self.x_offset) / self.scale,
