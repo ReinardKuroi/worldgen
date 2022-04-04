@@ -9,6 +9,7 @@
 - [ ] maybe like cave entrances on the side
 - [ ] spinning camera for preview
 - [ ] correct orientation for Blender/Unreal/Unity
+- [ ] add CLI for params used in app.py
 
 ## Technical babble
 
