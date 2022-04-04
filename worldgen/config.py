@@ -27,9 +27,17 @@ class __ConfigManager:
             self.config = self.__config_model(**data)
 
     def _save_config_to_file(self):
+        self._create_config_folder()
         with open(self.config_path, 'w') as f:
             data = asdict(self.config)
             f.write(json.dumps(data))
+
+    def _create_config_folder(self):
+        if not self._config_folder_exists():
+            self.config_path.parent.mkdir(exist_ok=True, parents=True)
+
+    def _config_folder_exists(self):
+        return self.config_path.parent.exists()
 
     def _create_default_config(self):
         self.config = self.__config_model()
