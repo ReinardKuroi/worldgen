@@ -1,4 +1,7 @@
+from functools import reduce
+
 import numpy
+from matplotlib import pyplot
 
 permutation = (151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36,
                103, 30, 69, 142, 8, 99, 37, 240, 21, 10, 23, 190, 6, 148, 247, 120, 234, 75, 0,
@@ -16,17 +19,73 @@ permutation = (151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7,
                157, 184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205,
                93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180)
 
+p = permutation * 2
 
-p = permutation *2
+sqrt_2 = numpy.sqrt(2)  # speedup
+
+grad2d = numpy.array(
+    [[1, 1],
+     [-1, 1],
+     [1, -1],
+     [-1, -1],
+     [sqrt_2, 0],
+     [0, sqrt_2],
+     [0 - sqrt_2, 0],
+     [0, 0 - sqrt_2]]
+) / sqrt_2
+
+square = numpy.array(
+    [[0, 0],
+     [0, 1],
+     [1, 0],
+     [1, 1]]
+)
 
 
 def fade(v: numpy.ndarray):
-    return 6 * v**5 - 15 * v**4 + 10 * v**3
+    return 6 * v ** 5 - 15 * v ** 4 + 10 * v ** 3  # different smoothstep for speedup?
 
 
 def lerp(t: numpy.ndarray, a: numpy.ndarray, b: numpy.ndarray):
     return a + t * (b - a)
 
 
-def gradient(hash, v):
-    pass
+def grad(h: int) -> numpy.ndarray:
+    return grad2d[h]
+
+
+def hash2d(v: numpy.ndarray) -> int:
+    return p[p[v[0]] + v[1]] & 7
+
+
+def perlin2d(v: numpy.ndarray) -> float:
+    """
+    First, we get a positional vector v(vx, vy)
+    Then we determine the base grid coordinate of v.
+    Each point is somewhere within a grid of discrete random gradient vector.
+    v_floor is the 'lowest' point, which defines a square (or a cube if we're in 3D).
+    We only really need the relative coordinates to the vertexes of said grid square/cube.
+    """
+    v_rel = square + numpy.floor(v) - v
+    v_fade = fade(-v_rel[0])
+
+    v_idx = square + numpy.int_(v) & 255
+    v_hash = numpy.apply_along_axis(hash2d, 1, v_idx)
+    v_grad = grad(v_hash)
+
+    v_dot = numpy.einsum('ij,ij->i', v_rel, v_grad).reshape(2, 2)
+
+    v_lerp = lerp(v_fade[0], *lerp(v_fade[1], *v_dot))
+    return v_lerp
+
+
+@numpy.vectorize
+def func(x, y) -> float:
+    scale = 10
+    return perlin2d(numpy.array([x, y], dtype=float)/scale)
+
+
+grid = numpy.meshgrid(*(numpy.arange(x) for x in (256, 256)), indexing='ij')
+data = func(*grid)
+
+pyplot.imshow(data)
