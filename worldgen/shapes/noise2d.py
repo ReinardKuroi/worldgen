@@ -95,7 +95,7 @@ with cProfile.Profile() as pr:
     """
     expand grid of 0-10, 0-10 to 0 0 0 0 .... 9 9 9 9 10
     create 4 grids with offsets
-    dot each with input
+    dot each with input.
     """
 
     points = numpy.meshgrid(*((numpy.arange(0, s * x, x) / s) + o for o, s, x in zip(offset, shape, scale)), indexing='ij')
