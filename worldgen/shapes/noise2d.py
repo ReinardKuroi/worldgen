@@ -1,5 +1,9 @@
+import cProfile
+import functools
+import timeit
 from functools import reduce
 
+import noise
 import numpy
 from matplotlib import pyplot
 
@@ -21,7 +25,7 @@ permutation = (151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7,
 
 p = permutation * 2
 
-sqrt_2 = numpy.sqrt(2)  # speedup
+sqrt_2 = numpy.sqrt(2)
 
 grad2d = numpy.array(
     [[1, 1],
@@ -42,50 +46,127 @@ square = numpy.array(
 )
 
 
+@numpy.vectorize
+def dot_grad(v, hash):
+    numpy.dot(v, grad(hash))
+
+
+@numpy.vectorize
 def fade(v: numpy.ndarray):
-    return 6 * v ** 5 - 15 * v ** 4 + 10 * v ** 3  # different smoothstep for speedup?
+    return 6 * v ** 5 - 15 * v ** 4 + 10 * v ** 3
 
 
+@numpy.vectorize
 def lerp(t: numpy.ndarray, a: numpy.ndarray, b: numpy.ndarray):
     return a + t * (b - a)
 
 
-def grad(h: int) -> numpy.ndarray:
+@numpy.vectorize
+def grad(h: int):
     return grad2d[h]
 
 
-def hash2d(v: numpy.ndarray) -> int:
-    return p[p[v[0]] + v[1]] & 7
+@numpy.vectorize
+def hash2d(x, y) -> int:
+    return p[p[x] + y]
 
 
+@numpy.vectorize
+def hash3d(x, y, z) -> int:
+    return p[p[p[x] + y] + z]
+
+
+@numpy.vectorize
+def ndhash(*v) -> int:
+    if len(v) > 1:
+        return p[ndhash(*v[1:]) + v[0] & 255]
+    else:
+        return p[v[0] & 255]
+
+
+def hashgrad2d(x, y):
+    return grad2d[p[p[x] + y] & 7]
+
+
+with cProfile.Profile() as pr:
+    offset = (0, 0)
+    shape = (1000, 1000)
+    scale = (6, 6)
+    """
+    expand grid of 0-10, 0-10 to 0 0 0 0 .... 9 9 9 9 10
+    create 4 grids with offsets
+    dot each with input
+    """
+
+    points = numpy.meshgrid(*((numpy.arange(0, s * x, x) / s) + o for o, s, x in zip(offset, shape, scale)), indexing='ij')
+    point_space = numpy.dstack(points)
+    relative_point_space = numpy.floor(point_space)
+
+    grid = numpy.int_(numpy.meshgrid(*(numpy.arange(o, s + o) * x // s for o, s, x in zip(offset, shape, scale)), indexing='ij'))
+
+    # multigrad = [grad2d[ndhash(numpy.apply_along_axis(lambda x: x + v, -1, numpy.dstack(grid))) & 7].reshape(*shape, 2) for v in square]
+
+    g00 = hashgrad2d(*grid)
+    p00 = point_space - relative_point_space
+    # g01 = grad2d[ndhash(*grid) & 7]
+    result = numpy.sum(p00 * g00, axis=2)
+
+    ######################
+
+    # input_grid = numpy.meshgrid(*(numpy.arange(s * x) / x for s, x in zip(shape, scale)), indexing='ij')
+    # input_vectors = numpy.dstack(input_grid)
+    #
+    # grid = numpy.meshgrid(*(numpy.arange(start=o, stop=o+s+1) for o, s, x in zip(offset, shape, scale)), indexing='ij')
+    # global_hash_table = ndhash(*grid) & 7
+    # local_grid = numpy.meshgrid(*(numpy.arange(start=o, stop=o+s*x) for o, s, x in zip(offset, shape, scale)), indexing='ij')
+    # local_hash_table = ndhash(*numpy.int_(input_grid)) & 7
+    # idx_vectors = numpy.dstack(grid)
+    # grad_table = grad2d[global_hash_table].reshape(*shape, 2)
+    #
+    # data = input_vectors.floor
+    # numpy.sum(random_data * grad_table, axis=2)
+    # gdx, gdy = grad(global_hash_table)
+pr.print_stats(sort='tottime')
+pyplot.imshow(result)
+
+
+@numpy.vectorize
 def perlin2d(v: numpy.ndarray) -> float:
-    """
-    First, we get a positional vector v(vx, vy)
-    Then we determine the base grid coordinate of v.
-    Each point is somewhere within a grid of discrete random gradient vector.
-    v_floor is the 'lowest' point, which defines a square (or a cube if we're in 3D).
-    We only really need the relative coordinates to the vertexes of said grid square/cube.
-    """
     v_rel = square + numpy.floor(v) - v
     v_fade = fade(-v_rel[0])
-
     v_idx = square + numpy.int_(v) & 255
     v_hash = numpy.apply_along_axis(hash2d, 1, v_idx)
     v_grad = grad(v_hash)
-
     v_dot = numpy.einsum('ij,ij->i', v_rel, v_grad).reshape(2, 2)
-
     v_lerp = lerp(v_fade[0], *lerp(v_fade[1], *v_dot))
     return v_lerp
 
 
 @numpy.vectorize
-def func(x, y) -> float:
+def gradient_grid(shape):
+    grid = numpy.meshgrid(*(numpy.arange(x) for x in shape), indexing='ij')
+    v_hash = hash2d(*grid) & 7
+    v_grad = grad(v_hash)
+    return v_grad
+
+
+@numpy.vectorize
+def perlin2d_wrapper(x, y) -> float:
     scale = 10
-    return perlin2d(numpy.array([x, y], dtype=float)/scale)
+    return perlin2d(numpy.array([x, y], dtype=float) / scale)
+
+
+@numpy.vectorize
+def pnoise2_wrapper(x, y) -> float:
+    scale = 10
+    return noise.pnoise2(x / scale, y / scale)
 
 
 grid = numpy.meshgrid(*(numpy.arange(x) for x in (256, 256)), indexing='ij')
-data = func(*grid)
-
-pyplot.imshow(data)
+# data = perlin2d(grid)
+fig = pyplot.figure()
+ax = fig.add_subplot(111)
+gd = numpy.dstack((gdx, gdy))
+ax.quiver(*gd, cmap='coolwarm')
+ax.set_aspect('equal')
+pyplot.show()
